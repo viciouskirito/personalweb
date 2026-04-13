@@ -602,9 +602,7 @@ section {
 }
 
 .contact-content {
-    display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
-    gap: 4rem;
+    display: block;
     color: var(--text-primary);
 }
 
@@ -648,12 +646,44 @@ section {
     font-weight: 500;
 }
 
+.contact-copy {
+    cursor: pointer;
+}
+
+.contact-copy span {
+    user-select: none;
+}
+
+.copy-toast {
+    position: fixed;
+    left: 50%;
+    top: 28px;
+    transform: translateX(-50%) translateY(-20px);
+    background: rgba(30, 30, 30, 0.92);
+    color: #ffffff;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 9999;
+}
+
+.copy-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
 .social-links {
     display: flex;
     gap: 1.25rem;
-    justify-content: flex-end;
+    justify-content: center;
     align-items: center;
     flex-wrap: wrap;
+    margin-top: 1rem;
+    padding-left: 0;
 }
 
 .social-link {
@@ -702,6 +732,18 @@ section {
     position: relative;
     z-index: 1;
     transition: all var(--transition-base);
+}
+
+.social-link .social-icon {
+    width: 24px;
+    height: 24px;
+    position: relative;
+    z-index: 1;
+    transition: all var(--transition-base);
+}
+
+.social-link:hover .social-icon {
+    transform: scale(1.05);
 }
 
 .footer {
@@ -902,12 +944,12 @@ body {
     }
 
     .contact-content {
-        grid-template-columns: 1fr;
-        gap: 3rem;
+        display: block;
     }
 
     .social-links {
         justify-content: center;
+        padding-left: 0;
     }
 }
 

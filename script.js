@@ -14,6 +14,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 初始化联系表单验证（如果有的话）
     initContactForm();
+
+    // 初始化联系信息复制功能
+    initContactCopy();
 });
 
 // 平滑滚动功能
@@ -176,6 +179,62 @@ function initContactForm() {
             }
         });
     }
+}
+
+function initContactCopy() {
+    const copyItems = document.querySelectorAll('.contact-copy');
+    if (!copyItems.length) return;
+
+    const toast = createCopyToast();
+
+    copyItems.forEach(item => {
+        item.addEventListener('click', async function() {
+            const copyText = this.getAttribute('data-copy-text') || '';
+            const copyLabel = this.getAttribute('data-copy-label') || '内容';
+            const copied = await copyToClipboard(copyText);
+            showCopyToast(toast, copied ? `${copyLabel}已复制到剪贴板` : `${copyLabel}复制失败，请手动复制`);
+        });
+    });
+}
+
+function createCopyToast() {
+    const toast = document.createElement('div');
+    toast.className = 'copy-toast';
+    document.body.appendChild(toast);
+    return toast;
+}
+
+async function copyToClipboard(text) {
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return true;
+        }
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const copied = document.execCommand('copy');
+        document.body.removeChild(textArea);
+        return copied;
+    } catch (error) {
+        return false;
+    }
+}
+
+let copyToastTimer = null;
+function showCopyToast(toast, message) {
+    toast.textContent = message;
+    toast.classList.add('show');
+    if (copyToastTimer) {
+        clearTimeout(copyToastTimer);
+    }
+    copyToastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+    }, 1800);
 }
 
 // 邮箱验证函数
