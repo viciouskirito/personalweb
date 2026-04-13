@@ -89,61 +89,15 @@ function initAnimations() {
     
     // 观察所有需要动画的元素
     const animateElements = document.querySelectorAll('.skill-card, .project-card, .about-stats .stat, .contact-item, .section-header');
-    
+
     animateElements.forEach(el => {
         el.classList.add('reveal');
         observer.observe(el);
     });
-    
-    // 英雄区域打字机效果
-    typeWriterEffect();
-    
-
 }
 
-// 打字机效果
-function typeWriterEffect() {
-    const heroTitle = document.querySelector('.hero-title');
-    const originalText = heroTitle.innerHTML;
-    const text = originalText.replace('<span class="highlight">李思治</span>', '李思治');
-    
-    // 保存原始HTML以便后续恢复
-    heroTitle.setAttribute('data-original', originalText);
-    heroTitle.innerHTML = '';
-    let i = 0;
-    
-    // 先暂停光标动画，等待打字开始
-    heroTitle.style.animation = 'none';
-    
-    function type() {
-        if (i < text.length) {
-            // 处理高亮文本 - 确保显示完整字符
-            if (text.substr(i, 3) === '李思治') {
-                heroTitle.innerHTML = text.substring(0, i) + '<span class="highlight">李思治</span>';
-                i += 3;
-            } else {
-                // 确保显示完整的中文字符（UTF-8字符）
-                const char = text.charAt(i);
-                heroTitle.innerHTML = text.substring(0, i) + char;
-                i += char.length;
-            }
-            
-            // 确保光标始终在文本末尾
-            setTimeout(type, 100);
-        } else {
-            // 打字完成后恢复原始HTML（包含高亮样式）
-            heroTitle.innerHTML = heroTitle.getAttribute('data-original');
-            // 打字完成后重新启用光标动画
-            heroTitle.style.animation = 'blink 0.8s step-end infinite';
-        }
-    }
-    
-    // 延迟开始打字效果，同时恢复光标动画
-    setTimeout(() => {
-        heroTitle.style.animation = 'blink 0.8s step-end infinite';
-        type();
-    }, 500);
-}
+// 打字机效果 - 改用CSS实现，不再操作DOM
+// typeWriterEffect 函数已移除，使用纯CSS动画
 
 // 项目卡片交互
 function initProjectCards() {
