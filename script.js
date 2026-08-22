@@ -201,28 +201,15 @@
         var backToTop = document.querySelector('.site-footer a[href="#top"]');
         if (!backToTop) return;
 
-        var animationId = null;
         backToTop.addEventListener('click', function (event) {
             event.preventDefault();
-            var start = window.scrollY;
-            var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-            if (animationId) window.cancelAnimationFrame(animationId);
-            if (reduceMotion || start < 2) {
-                window.scrollTo(0, 0);
-                return;
-            }
-
-            var startedAt = null;
-            var animate = function (timestamp) {
-                if (startedAt === null) startedAt = timestamp;
-                var progress = Math.min((timestamp - startedAt) / 700, 1);
-                var eased = 1 - Math.pow(1 - progress, 4);
-                window.scrollTo(0, Math.round(start * (1 - eased)));
-                if (progress < 1) animationId = window.requestAnimationFrame(animate);
-                else animationId = null;
-            };
-            animationId = window.requestAnimationFrame(animate);
+            var root = document.documentElement;
+            var previousBehavior = root.style.scrollBehavior;
+            root.style.scrollBehavior = 'auto';
+            window.scrollTo(0, 0);
+            window.requestAnimationFrame(function () {
+                root.style.scrollBehavior = previousBehavior;
+            });
         });
     }
 
