@@ -10,29 +10,30 @@
 
         var config = params || {};
         var particleConfig = config.particles || {};
-        var opacityConfig = particleConfig.opacity || {};
         var moveConfig = particleConfig.move || {};
-        var pixelConfig = particleConfig.pixel || {};
+        var lineConfig = particleConfig.line_linked || {};
         var interactionConfig = (config.interactivity || {}).events || {};
         var grabConfig = ((config.interactivity || {}).modes || {}).grab || {};
         var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var pixels = [];
+        var particles = [];
         var animationId = null;
         var width = 0;
         var height = 0;
         var dpr = 1;
-        var phase = 0;
         var mouse = { x: -1000, y: -1000 };
-        var colors = Array.isArray(particleConfig.color) ? particleConfig.color : [particleConfig.color || '#e5e8e3'];
 
         var options = {
-            step: Math.max(8, Number(pixelConfig.step) || 9),
-            density: Math.min(1, Math.max(0.2, Number(pixelConfig.density) || 0.66)),
-            square: Math.max(2, Number(pixelConfig.square) || 3.2),
-            opacity: Number(opacityConfig.value) || 0.38,
+            count: Math.min(Number((particleConfig.number || {}).value) || 42, 70),
+            color: particleConfig.color || '#ff2d7d',
+            opacity: Number((particleConfig.opacity || {}).value) || 0.35,
+            size: Number((particleConfig.size || {}).value) || 2,
             speed: Number(moveConfig.speed) || 0.45,
-            hover: interactionConfig.onhover ? interactionConfig.onhover.enable !== false : true,
-            grabDistance: Number(grabConfig.distance) || 150
+            links: lineConfig.enable !== false,
+            linkDistance: Number(lineConfig.distance) || 142,
+            linkColor: lineConfig.color || '#d9ff58',
+            linkOpacity: Number(lineConfig.opacity) || 0.12,
+            grabDistance: Number(grabConfig.distance) || 150,
+            hoverEnabled: interactionConfig.onhover ? interactionConfig.onhover.enable !== false : true
         };
 
         function resizeCanvas() {
@@ -45,67 +46,80 @@
             context.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
 
-        function gaussian(value, center, spread) {
-            var distance = (value - center) / spread;
-            return Math.exp(-distance * distance);
+        function createParticles() {
+            particles = [];
+            for (var index = 0; index < options.count; index += 1) {
+                var angle = Math.random() * Math.PI * 2;
+                var velocity = (Math.random() * 0.45 + 0.25) * options.speed;
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    vx: Math.cos(angle) * velocity,
+                    vy: Math.sin(angle) * velocity,
+                    radius: Math.random() * options.size + 0.65,
+                    opacity: Math.random() * 0.45 + options.opacity * 0.55
+                });
+            }
         }
 
-        function fieldDensity(x, y) {
-            var normalizedX = x / width;
-            var normalizedY = y / height;
-            var movingWave = 0.5 + Math.sin(normalizedX * 7 + phase * 0.24) * 0.035;
-            var sweep = gaussian(normalizedY, movingWave, 0.15) * (0.45 + normalizedX * 0.45);
-            var leftCluster = gaussian(normalizedX, 0.13, 0.2) * gaussian(normalizedY, 0.62, 0.24) * 0.92;
-            var centerCluster = gaussian(normalizedX, 0.48, 0.19) * gaussian(normalizedY, 0.33, 0.28) * 0.95;
-            var lowerCluster = gaussian(normalizedX, 0.38, 0.28) * gaussian(normalizedY, 0.83, 0.18) * 0.58;
-            var rightCluster = gaussian(normalizedX, 0.87, 0.12) * gaussian(normalizedY, 0.36, 0.18) * 0.5;
-            return Math.min(1, sweep + leftCluster + centerCluster + lowerCluster + rightCluster);
+        function updateParticle(particle) {
+            particle.x += particle.vx;
+            particle.y += particle.vy;
+            if (particle.x > width + 10) particle.x = -10;
+            if (particle.x < -10) particle.x = width + 10;
+            if (particle.y > height + 10) particle.y = -10;
+            if (particle.y < -10) particle.y = height + 10;
         }
 
-        function createPixels() {
-            pixels = [];
-            var step = options.step;
-            for (var y = step * 0.5; y < height; y += step) {
-                for (var x = step * 0.5; x < width; x += step) {
-                    var density = fieldDensity(x, y);
-                    var threshold = 1 - density * options.density;
-                    if (Math.random() < threshold) continue;
+        function drawParticle(particle) {
+            context.beginPath();
+            context.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+            context.fillStyle = options.color;
+            context.globalAlpha = particle.opacity;
+            context.fill();
+        }
 
-                    pixels.push({
-                        x: x + (Math.random() - 0.5) * step * 0.25,
-                        y: y + (Math.random() - 0.5) * step * 0.25,
-                        size: options.square * (0.72 + Math.random() * 0.5),
-                        alpha: options.opacity * (0.4 + density * 0.8) * (0.75 + Math.random() * 0.25),
-                        color: colors[Math.floor(Math.random() * colors.length)],
-                        phase: Math.random() * Math.PI * 2,
-                        drift: 0.2 + Math.random() * 0.8
-                    });
+        function drawLinks() {
+            if (!options.links) return;
+            for (var first = 0; first < particles.length; first += 1) {
+                for (var second = first + 1; second < particles.length; second += 1) {
+                    var one = particles[first];
+                    var two = particles[second];
+                    var xDistance = one.x - two.x;
+                    var yDistance = one.y - two.y;
+                    var distance = Math.sqrt(xDistance * xDistance + yDistance * yDistance);
+                    if (distance > options.linkDistance) continue;
+
+                    var opacity = (1 - distance / options.linkDistance) * options.linkOpacity;
+                    var nearMouse = false;
+                    if (options.hoverEnabled) {
+                        var mouseDistance = Math.sqrt(Math.pow(mouse.x - one.x, 2) + Math.pow(mouse.y - one.y, 2));
+                        nearMouse = mouseDistance < options.grabDistance;
+                    }
+                    context.beginPath();
+                    context.moveTo(one.x, one.y);
+                    context.lineTo(two.x, two.y);
+                    context.strokeStyle = options.linkColor;
+                    context.globalAlpha = nearMouse ? Math.min(opacity * 3.5, 0.45) : opacity;
+                    context.lineWidth = nearMouse ? 1.15 : 0.7;
+                    context.stroke();
                 }
             }
         }
 
-        function drawPixel(pixel) {
-            var distance = Math.sqrt(Math.pow(mouse.x - pixel.x, 2) + Math.pow(mouse.y - pixel.y, 2));
-            var hoverStrength = options.hover && distance < options.grabDistance ? 1 - distance / options.grabDistance : 0;
-            var pulse = reduceMotion ? 0 : Math.sin(phase * 0.75 * pixel.drift + pixel.phase) * 0.08;
-            var size = pixel.size + hoverStrength * 2.5;
-            var alpha = Math.min(0.9, pixel.alpha + hoverStrength * 0.34 + pulse);
-            context.globalAlpha = Math.max(0.05, alpha);
-            context.fillStyle = pixel.color;
-            context.fillRect(pixel.x - size / 2, pixel.y - size / 2, size, size);
-        }
-
         function drawFrame() {
             context.clearRect(0, 0, width, height);
-            if (!reduceMotion) phase += options.speed * 0.018;
-            pixels.forEach(drawPixel);
+            context.globalAlpha = 1;
+            if (!reduceMotion) particles.forEach(updateParticle);
+            drawLinks();
+            particles.forEach(drawParticle);
             context.globalAlpha = 1;
             if (!reduceMotion) animationId = window.requestAnimationFrame(drawFrame);
         }
 
         function handleResize() {
             resizeCanvas();
-            createPixels();
+            createParticles();
             if (reduceMotion) drawFrame();
         }
 
@@ -118,12 +132,12 @@
         window.addEventListener('resize', handleResize, { passive: true });
 
         resizeCanvas();
-        createPixels();
+        createParticles();
         drawFrame();
 
         return {
             canvas: canvas,
-            pixels: pixels,
+            particles: particles,
             destroy: function () {
                 if (animationId) window.cancelAnimationFrame(animationId);
                 window.removeEventListener('resize', handleResize);
