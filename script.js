@@ -9,6 +9,7 @@
         initRevealAnimations();
         initCopyInteractions();
         initPointerGlow();
+        initScrollProgress();
         initYear();
     });
 
@@ -58,6 +59,11 @@
 
             sections.forEach(function (section) { sectionObserver.observe(section); });
         }
+
+        if (window.location.hash) setActiveLink(window.location.hash.slice(1));
+        window.addEventListener('hashchange', function () {
+            if (window.location.hash) setActiveLink(window.location.hash.slice(1));
+        });
 
         function setActiveLink(id) {
             links.forEach(function (link) {
@@ -164,6 +170,30 @@
                 card.style.setProperty('--pointer-y', '50%');
             });
         });
+    }
+
+    function initScrollProgress() {
+        var progressBar = document.querySelector('.scroll-progress span');
+        if (!progressBar) return;
+
+        var ticking = false;
+
+        function updateProgress() {
+            var scrollableHeight = document.documentElement.scrollHeight - window.innerHeight;
+            var progress = scrollableHeight > 0 ? Math.min(window.scrollY / scrollableHeight, 1) : 0;
+            progressBar.style.width = (progress * 100).toFixed(2) + '%';
+            ticking = false;
+        }
+
+        function requestProgressUpdate() {
+            if (ticking) return;
+            ticking = true;
+            window.requestAnimationFrame(updateProgress);
+        }
+
+        updateProgress();
+        window.addEventListener('scroll', requestProgressUpdate, { passive: true });
+        window.addEventListener('resize', requestProgressUpdate, { passive: true });
     }
 
     function initYear() {
