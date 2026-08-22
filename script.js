@@ -10,6 +10,8 @@
         initCopyInteractions();
         initPointerGlow();
         initScrollProgress();
+        initBackToTop();
+        initFooterHover();
         initYear();
     });
 
@@ -194,6 +196,49 @@
         updateProgress();
         window.addEventListener('scroll', requestProgressUpdate, { passive: true });
         window.addEventListener('resize', requestProgressUpdate, { passive: true });
+    }
+
+    function initBackToTop() {
+        var backToTop = document.querySelector('.back-to-top');
+        if (!backToTop) return;
+        var scrollAnimationId = null;
+
+        backToTop.addEventListener('click', function (event) {
+            event.preventDefault();
+            var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var start = window.scrollY;
+
+            if (scrollAnimationId) window.cancelAnimationFrame(scrollAnimationId);
+            if (reduceMotion || start < 2) {
+                window.scrollTo(0, 0);
+            } else {
+                var startedAt = null;
+                var duration = 700;
+                var animateToTop = function (timestamp) {
+                    if (startedAt === null) startedAt = timestamp;
+                    var progress = Math.min((timestamp - startedAt) / duration, 1);
+                    var eased = 1 - Math.pow(1 - progress, 4);
+                    window.scrollTo(0, Math.round(start * (1 - eased)));
+                    if (progress < 1) scrollAnimationId = window.requestAnimationFrame(animateToTop);
+                    else scrollAnimationId = null;
+                };
+                scrollAnimationId = window.requestAnimationFrame(animateToTop);
+            }
+            if (window.history && window.history.replaceState) {
+                window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            }
+        });
+    }
+
+    function initFooterHover() {
+        var marquee = document.querySelector('.footer-marquee');
+        if (!marquee || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)) return;
+
+        marquee.addEventListener('pointermove', function (event) {
+            var rect = marquee.getBoundingClientRect();
+            marquee.style.setProperty('--marquee-x', ((event.clientX - rect.left) / rect.width * 100).toFixed(2) + '%');
+            marquee.style.setProperty('--marquee-y', ((event.clientY - rect.top) / rect.height * 100).toFixed(2) + '%');
+        }, { passive: true });
     }
 
     function initYear() {
